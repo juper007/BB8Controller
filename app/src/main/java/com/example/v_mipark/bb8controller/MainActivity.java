@@ -133,6 +133,14 @@ public class MainActivity extends AppCompatActivity implements RobotChangedState
     }
 
     @Override
+    protected void onStop() {
+        if (mRobot != null) {
+            mRobot.sleep();
+        }
+        super.onStop();
+    }
+
+    @Override
     public void handleRobotChangedState(Robot robot, RobotChangedStateNotificationType type) {
         switch (type) {
             case Online:
