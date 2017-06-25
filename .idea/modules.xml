@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/BB8Controller.iml" filepath="$PROJECT_DIR$/BB8Controller.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/bb8controller.iml" filepath="$PROJECT_DIR$/bb8controller.iml" />
     </modules>
   </component>
 </project>
