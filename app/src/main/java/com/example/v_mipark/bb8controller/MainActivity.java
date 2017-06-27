@@ -188,7 +188,10 @@ public class MainActivity extends AppCompatActivity implements RobotChangedState
         InputDevice mInputDevice = event.getDevice();
 
         float x = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos);
+        if (x == 0) x = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos);
+
         float y = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos);
+        if (y == 0) y = getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos);
 
         x = Math.round(x * 100) / 100.0f;
         y = Math.round(y * 100) / 100.0f;
@@ -208,17 +211,14 @@ public class MainActivity extends AppCompatActivity implements RobotChangedState
     }
 
     private float getCenteredAxis(MotionEvent event, InputDevice device, int axis, int historyPos) {
-        final InputDevice.MotionRange range =
-                device.getMotionRange(axis, event.getSource());
+        final InputDevice.MotionRange range = device.getMotionRange(axis, event.getSource());
 
         // A joystick at rest does not always report an absolute position of
         // (0,0). Use the getFlat() method to determine the range of values
         // bounding the joystick axis center.
         if (range != null) {
             final float flat = range.getFlat();
-            final float value =
-                    historyPos < 0 ? event.getAxisValue(axis):
-                            event.getHistoricalAxisValue(axis, historyPos);
+            final float value = historyPos < 0 ? event.getAxisValue(axis): event.getHistoricalAxisValue(axis, historyPos);
 
             // Ignore axis values that are within the 'flat' region of the
             // joystick axis center.
@@ -241,15 +241,11 @@ public class MainActivity extends AppCompatActivity implements RobotChangedState
             case Online:
 
                 mDiscoveryAgent.stopDiscovery();
-
-                //If robot uses Bluetooth LE, Developer Mode can be turned on.
-                //This turns off DOS protection. This generally isn't required.
                 addLog("Found BB-8");
                 if( robot instanceof RobotLE) {
                     ( (RobotLE) robot ).setDeveloperMode( true );
                 }
 
-                //Save the robot as a ConvenienceRobot for additional utility methods
                 mRobot = new ConvenienceRobot(robot);
                 mRobot.setLed(0f, 0f, 0f);
                 mLedOn = false;
