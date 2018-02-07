@@ -12,6 +12,7 @@ import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import com.orbotix.ConvenienceRobot;
+import com.orbotix.common.DiscoveryAgentEventListener;
 import com.orbotix.le.DiscoveryAgentLE;
 import com.orbotix.common.DiscoveryException;
 import com.orbotix.common.Robot;
@@ -19,7 +20,9 @@ import com.orbotix.common.RobotChangedStateListener;
 import com.orbotix.le.RobotLE;
 import com.orbotix.le.RobotRadioDescriptor;
 
-public class MainActivity extends AppCompatActivity implements RobotChangedStateListener {
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
     private ConvenienceRobot mRobot;
 
     private float mSpeed = 0.3f;
@@ -45,9 +48,6 @@ public class MainActivity extends AppCompatActivity implements RobotChangedState
     }
 
     private void init() {
-        mDiscoveryAgent = DiscoveryAgentLE.getInstance();
-        mDiscoveryAgent.addRobotStateListener( this );
-
         mLogView = (TextView) findViewById(R.id.textview_log);
         mButtonMoveUp = (Button) findViewById(R.id.button_move_up);
         mButtonMoveUp.setOnTouchListener(new View.OnTouchListener() {
@@ -133,9 +133,57 @@ public class MainActivity extends AppCompatActivity implements RobotChangedState
         }
     }
 
+    private DiscoveryAgentEventListener _discoveryAgentEventListener = new DiscoveryAgentEventListener() {
+        @Override
+        public void handleRobotsAvailable(List<Robot> robots) {
+            addLog("Found " + robots.size() + " robots");
+
+            for (Robot robot : robots) {
+                addLog(robot.getName());
+            }
+        }
+    };
+
+    private RobotChangedStateListener _robotStateListener = new RobotChangedStateListener() {
+        @Override
+        public void handleRobotChangedState(Robot robot, RobotChangedStateNotificationType type) {
+            switch (type) {
+                case Online:
+
+                    mDiscoveryAgent.stopDiscovery();
+                    addLog("Found BB-8");
+                    if( robot instanceof RobotLE) {
+                        ( (RobotLE) robot ).setDeveloperMode( true );
+                    }
+
+                    mRobot = new ConvenienceRobot(robot);
+                    mRobot.setLed(0f, 0f, 0f);
+                    mLedOn = false;
+                    break;
+                case Disconnected:
+                    break;
+                case Connecting:
+                    addLog("Connecting to BB-8");
+                    break;
+                case Connected:
+                    addLog("Connected to BB-8");
+                    break;
+                case FailedConnect:
+                    addLog("Failed to Connect to BB-8");
+                    break;
+                default:
+                    addLog("unknown type " + type.toString());
+            }
+        }
+    };
+
     @Override
     protected void onStart() {
         super.onStart();
+
+        mDiscoveryAgent = DiscoveryAgentLE.getInstance();
+        mDiscoveryAgent.addDiscoveryListener(_discoveryAgentEventListener);
+        mDiscoveryAgent.addRobotStateListener(_robotStateListener);
 
         RobotRadioDescriptor robotRadioDescriptor = new RobotRadioDescriptor();
         robotRadioDescriptor.setNamePrefixes(new String[]{"BB-"});
@@ -153,11 +201,15 @@ public class MainActivity extends AppCompatActivity implements RobotChangedState
 
     @Override
     protected void onStop() {
+
         if (mRobot != null) {
             mRobot.disconnect();
         }
         if (mDiscoveryAgent.isDiscovering()) {
             mDiscoveryAgent.stopDiscovery();
+            mDiscoveryAgent.removeDiscoveryListener(_discoveryAgentEventListener);
+            mDiscoveryAgent.removeRobotStateListener(_robotStateListener);
+            mDiscoveryAgent = null;
         }
         super.onStop();
     }
@@ -233,37 +285,6 @@ public class MainActivity extends AppCompatActivity implements RobotChangedState
         super.onDestroy();
 
         mDiscoveryAgent.addRobotStateListener(null);
-    }
-
-    @Override
-    public void handleRobotChangedState(Robot robot, RobotChangedStateNotificationType type) {
-        switch (type) {
-            case Online:
-
-                mDiscoveryAgent.stopDiscovery();
-                addLog("Found BB-8");
-                if( robot instanceof RobotLE) {
-                    ( (RobotLE) robot ).setDeveloperMode( true );
-                }
-
-                mRobot = new ConvenienceRobot(robot);
-                mRobot.setLed(0f, 0f, 0f);
-                mLedOn = false;
-                break;
-            case Disconnected:
-                break;
-            case Connecting:
-                addLog("Connecting to BB-8");
-                break;
-            case Connected:
-                addLog("Connected to BB-8");
-                break;
-            case FailedConnect:
-                addLog("Failed to Connect to BB-8");
-                break;
-            default:
-                addLog("unknown type " + type.toString());
-        }
     }
 
     @Override
